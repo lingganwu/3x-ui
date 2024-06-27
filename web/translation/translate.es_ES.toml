@@ -180,7 +180,7 @@
 "setDefaultCert" = "Establecer certificado desde el panel"
 "xtlsDesc" = "La versión del núcleo de Xray debe ser 1.7.5"
 "realityDesc" = "La versión del núcleo de Xray debe ser 1.8.0 o superior."
-"telegramDesc" = "Utiliza únicamente IDs de chat (puedes obtenerlo aquí @userinfobot o usando el comando '/id' en el bot)."
+"telegramDesc" = "Por favor, proporciona el ID de Chat de Telegram. (usa el comando '/id' en el bot) o (@userinfobot)"
 "subscriptionDesc" = "Puedes encontrar tu enlace de suscripción en Detalles, también puedes usar el mismo nombre para varias configuraciones."
 "info" = "Info"
 "same" = "misma"
@@ -534,8 +534,8 @@
 "status" = "✅ ¡El bot está bien!"
 "usage" = "❗ ¡Por favor proporciona un texto para buscar!"
 "getID" = "🆔 Tu ID: <code>{{ .ID }}</code>"
-"helpAdminCommands" = "Buscar un correo electrónico de cliente:\r\n<code>/usage [Email]</code>\r\n\r\nBuscar entradas (con estadísticas de cliente):\r\n<code>/inbound [Nota]</code>"
-"helpClientCommands" = "Para buscar estadísticas, simplemente usa el siguiente comando:\r\n\r\n<code>/usage [UUID|Contraseña]</code>"
+"helpAdminCommands" = "Para buscar un correo electrónico de cliente:\r\n<code>/usage [Correo electrónico]</code>\r\n\r\nPara buscar entradas (con estadísticas de cliente):\r\n<code>/inbound [Observación]</code>\r\n\r\nID de Chat de Telegram:\r\n<code>/id</code>"
+"helpClientCommands" = "Para buscar estadísticas, utiliza el siguiente comando:\r\n<code>/usage [Correo electrónico]</code>\r\n\r\nID de Chat de Telegram:\r\n<code>/id</code>"
 
 [tgbot.messages]
 "cpuThreshold" = "🔴 El uso de CPU {{ .Percent }}% es mayor que el umbral {{ .Threshold }}%"
@@ -547,6 +547,7 @@
 "datetime" = "⏰ Fecha y Hora: {{ .DateTime }}\r\n"
 "hostname" = "💻 Nombre del Host: {{ .Hostname }}\r\n"
 "version" = "🚀 Versión de X-UI: {{ .Version }}\r\n"
+"xrayVersion" = "📡 Versión de Xray: {{ .XrayVersion }}\r\n"
 "ipv6" = "🌐 IPv6: {{ .IPv6 }}\r\n"
 "ipv4" = "🌐 IPv4: {{ .IPv4 }}\r\n"
 "ip" = "🌐 IP: {{ .IP }}\r\n"

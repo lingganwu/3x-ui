@@ -12,10 +12,12 @@ type Protocol string
 const (
 	VMess       Protocol = "vmess"
 	VLESS       Protocol = "vless"
-	Dokodemo    Protocol = "Dokodemo-door"
-	Http        Protocol = "http"
+	DOKODEMO    Protocol = "dokodemo-door"
+	HTTP        Protocol = "http"
 	Trojan      Protocol = "trojan"
 	Shadowsocks Protocol = "shadowsocks"
+	Socks       Protocol = "socks"
+	WireGuard   Protocol = "wireguard"
 )
 
 type User struct {
@@ -91,7 +93,7 @@ type Client struct {
 	TotalGB    int64  `json:"totalGB" form:"totalGB"`
 	ExpiryTime int64  `json:"expiryTime" form:"expiryTime"`
 	Enable     bool   `json:"enable" form:"enable"`
-	TgID       string `json:"tgId" form:"tgId"`
+	TgID       int64  `json:"tgId" form:"tgId"`
 	SubID      string `json:"subId" form:"subId"`
 	Reset      int    `json:"reset" form:"reset"`
 }

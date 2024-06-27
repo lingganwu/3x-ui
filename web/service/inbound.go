@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -170,6 +171,23 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, boo
 	clients, err := s.GetClients(inbound)
 	if err != nil {
 		return inbound, false, err
+	}
+
+	// Secure client ID
+	for _, client := range clients {
+		if inbound.Protocol == "trojan" {
+			if client.Password == "" {
+				return inbound, false, common.NewError("empty client ID")
+			}
+		} else if inbound.Protocol == "shadowsocks" {
+			if client.Email == "" {
+				return inbound, false, common.NewError("empty client ID")
+			}
+		} else {
+			if client.ID == "" {
+				return inbound, false, common.NewError("empty client ID")
+			}
+		}
 	}
 
 	db := database.GetDB()
@@ -413,6 +431,23 @@ func (s *InboundService) AddInboundClient(data *model.Inbound) (bool, error) {
 		return false, err
 	}
 
+	// Secure client ID
+	for _, client := range clients {
+		if oldInbound.Protocol == "trojan" {
+			if client.Password == "" {
+				return false, common.NewError("empty client ID")
+			}
+		} else if oldInbound.Protocol == "shadowsocks" {
+			if client.Email == "" {
+				return false, common.NewError("empty client ID")
+			}
+		} else {
+			if client.ID == "" {
+				return false, common.NewError("empty client ID")
+			}
+		}
+	}
+
 	var oldSettings map[string]interface{}
 	err = json.Unmarshal([]byte(oldInbound.Settings), &oldSettings)
 	if err != nil {
@@ -496,9 +531,9 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 		client_key = "email"
 	}
 
-	inerfaceClients := settings["clients"].([]interface{})
+	interfaceClients := settings["clients"].([]interface{})
 	var newClients []interface{}
-	for _, client := range inerfaceClients {
+	for _, client := range interfaceClients {
 		c := client.(map[string]interface{})
 		c_id := c[client_key].(string)
 		if c_id == clientId {
@@ -574,7 +609,7 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 
 	oldEmail := ""
 	newClientId := ""
-	clientIndex := 0
+	clientIndex := -1
 	for index, oldClient := range oldClients {
 		oldClientId := ""
 		if oldInbound.Protocol == "trojan" {
@@ -595,7 +630,7 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 	}
 
 	// Validate new client ID
-	if newClientId == "" {
+	if newClientId == "" || clientIndex == -1 {
 		return false, common.NewError("empty client ID")
 	}
 
@@ -661,8 +696,12 @@ func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId strin
 	needRestart := false
 	if len(oldEmail) > 0 {
 		s.xrayApi.Init(p.GetAPIPort())
-		if s.xrayApi.RemoveUser(oldInbound.Tag, oldEmail) == nil {
+		err1 := s.xrayApi.RemoveUser(oldInbound.Tag, oldEmail)
+		if err1 == nil {
 			logger.Debug("Old client deleted by api:", clients[0].Email)
+		} else {
+			logger.Debug("Error in deleting client by api:", err1)
+			needRestart = true
 		}
 		if clients[0].Enable {
 			cipher := ""
@@ -1152,7 +1191,7 @@ func (s *InboundService) GetClientByEmail(clientEmail string) (*xray.ClientTraff
 	return nil, nil, common.NewError("Client Not Found In Inbound For Email:", clientEmail)
 }
 
-func (s *InboundService) SetClientTelegramUserID(trafficId int, tgId string) (bool, error) {
+func (s *InboundService) SetClientTelegramUserID(trafficId int, tgId int64) (bool, error) {
 	traffic, inbound, err := s.GetClientInboundByTrafficID(trafficId)
 	if err != nil {
 		return false, err
@@ -1650,13 +1689,17 @@ func (s *InboundService) DelDepletedClients(id int) (err error) {
 	}
 
 	err = tx.Where(whereText+" and enable = ?", id, false).Delete(xray.ClientTraffic{}).Error
-	return err
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (s *InboundService) GetClientTrafficTgBot(tgId string) ([]*xray.ClientTraffic, error) {
+func (s *InboundService) GetClientTrafficTgBot(tgId int64) ([]*xray.ClientTraffic, error) {
 	db := database.GetDB()
 	var inbounds []*model.Inbound
-	err := db.Model(model.Inbound{}).Where("settings like ?", fmt.Sprintf(`%%"tgId": "%s"%%`, tgId)).Find(&inbounds).Error
+	err := db.Model(model.Inbound{}).Where("settings like ?", fmt.Sprintf(`%%"tgId": %d%%`, tgId)).Find(&inbounds).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
 		return nil, err
 	}
@@ -1802,6 +1845,17 @@ func (s *InboundService) MigrationRequirements() {
 				// Add email='' if it is not exists
 				if _, ok := c["email"]; !ok {
 					c["email"] = ""
+				}
+
+				// Convert string tgId to int64
+				if _, ok := c["tgId"]; ok {
+					var tgId interface{} = c["tgId"]
+					if tgIdStr, ok2 := tgId.(string); ok2 {
+						tgIdInt64, err := strconv.ParseInt(strings.ReplaceAll(tgIdStr, " ", ""), 10, 64)
+						if err == nil {
+							c["tgId"] = tgIdInt64
+						}
+					}
 				}
 
 				// Remove "flow": "xtls-rprx-direct"
